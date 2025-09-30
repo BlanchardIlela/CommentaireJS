@@ -8,17 +8,22 @@ class InfinitePagination {
     #template
     /** @type {HTMLElement} */
     #target
+       /** @type {HTMLElement} */
+    #loader
     /** @type {object} */
     #elements
     /** @type {IntersectionObserver} */
     #observer
     /** @type {boolean} */
     #loading
+    /** @type {number} */
+    #page = 1
 
     /**
      * @param {HTMLElement} element 
      */
     constructor (element) {
+        this.#loader = element
         this.#endpoint = element.dataset.endpoint
         this.#template = document.querySelector(element.dataset.template)
         this.#target = document.querySelector(element.dataset.target)
@@ -38,9 +43,15 @@ class InfinitePagination {
             return 
         }
         this.#loading = true
-        const comments = await fetchJSON(this.#endpoint)
+        const url = new URL(this.#endpoint)
+        url.searchParams.set('_page', this.#page)
+        const comments = await fetchJSON(url.toString())
+        if (comments.length === 0) {
+            this.#observer.disconnect()
+            this.#loader.remove()
+            return
+        }
         //const elementsMap = JSON.parse(this.#elements)
-
         for (const comment of comments) {
             const commentElement = this.#template.content.cloneNode(true)
             for (const [key, selector] of Object.entries(this.#elements)) {
@@ -52,6 +63,7 @@ class InfinitePagination {
 
             this.#target.append(commentElement)
         }
+        this.#page++
         this.#loading = false
     }
 
