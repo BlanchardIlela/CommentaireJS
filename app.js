@@ -1,3 +1,4 @@
+import { alertElement } from "./functions/alert.js"
 import { fetchJSON } from "./functions/api.js"
 
 class InfinitePagination {
@@ -43,28 +44,38 @@ class InfinitePagination {
             return 
         }
         this.#loading = true
-        const url = new URL(this.#endpoint)
-        url.searchParams.set('_page', this.#page)
-        const comments = await fetchJSON(url.toString())
-        if (comments.length === 0) {
-            this.#observer.disconnect()
-            this.#loader.remove()
-            return
-        }
-        //const elementsMap = JSON.parse(this.#elements)
-        for (const comment of comments) {
-            const commentElement = this.#template.content.cloneNode(true)
-            for (const [key, selector] of Object.entries(this.#elements)) {
-                commentElement.querySelector(selector).innerText = comment[key]
+        try {
+            const url = new URL(this.#endpoint)
+            url.searchParams.set('_page', this.#page)
+            const comments = await fetchJSON(url.toString())
+            if (comments.length === 0) {
+                this.#observer.disconnect()
+                this.#loader.remove()
+                return
             }
-            // Injecter les données
-            //commentElement.querySelector(elementsMap.name).textContent = comment.name
-            //commentElement.querySelector(elementsMap.body).textContent = comment.body
+            //const elementsMap = JSON.parse(this.#elements)
+            for (const comment of comments) {
+                const commentElement = this.#template.content.cloneNode(true)
+                for (const [key, selector] of Object.entries(this.#elements)) {
+                    commentElement.querySelector(selector).innerText = comment[key]
+                }
+                // Injecter les données
+                //commentElement.querySelector(elementsMap.name).textContent = comment.name
+                //commentElement.querySelector(elementsMap.body).textContent = comment.body
 
-            this.#target.append(commentElement)
+                this.#target.append(commentElement)
+            }
+            this.#page++
+            this.#loading = false
+        } catch (e) {
+            this.#loader.style.display = 'none'
+            const error =   alertElement('Impossible de charger les contenus')
+            error.addEventListener('close', () => {
+                this.#loader.style.removeProperty('display')
+                this.#loading = false
+            })
+            this.#target.append(error)
         }
-        this.#page++
-        this.#loading = false
     }
 
 
